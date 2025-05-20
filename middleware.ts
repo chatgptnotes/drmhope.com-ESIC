@@ -14,8 +14,8 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // If user is logged in and trying to access login page
-  if (token && pathname === "/login") {
+  // If user is logged in and trying to access login or signup page
+  if (token && (pathname === "/login" || pathname === "/signup")) {
     // Redirect based on role
     switch (token.role) {
       case "super-admin":
@@ -33,5 +33,5 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
-}; 
+  matcher: ["/dashboard/:path*", "/login", "/signup"],
+};
