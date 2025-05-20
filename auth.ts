@@ -1,5 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { supabase } from "@/lib/supabaseAdmin";
 
 export const {
   handlers: { GET, POST },
@@ -16,26 +18,31 @@ export const {
       },
       async authorize(credentials) {
         try {
-          // Replace with real DB check
-          const users = [
-            { id: 1, email: "super@admin.com", role: "super-admin" },
-            { id: 2, email: "admin@admin.com", role: "admin" },
-            { id: 3, email: "hosp@hosp.com", role: "hospital" },
-            { id: 4, email: "clinic@clinic.com", role: "clinic" },
-          ];
+          if (!credentials?.email || !credentials.password) {
+            return null;
+          }
+          const { data: user } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', credentials.email)
+            .single();
 
-          const user = users.find(u => u.email === credentials?.email);
-
-          if (user) {
-            return {
-              id: user.id.toString(),
-              email: user.email,
-              role: user.role,
-            };
+          if (user && user.password_hash) {
+            const valid = await bcrypt.compare(
+              credentials.password,
+              user.password_hash
+            );
+            if (valid) {
+              return {
+                id: String(user.id),
+                email: user.email,
+                role: user.role,
+              };
+            }
           }
           return null;
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error('Auth error:', error);
           return null;
         }
       },
