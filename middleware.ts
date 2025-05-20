@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 export default async function middleware(request: NextRequest) {
   const token = await getToken({ 
     req: request,
-    secret: process.env.NEXTAUTH_SECRET || "your-secret-key-here"
+    secret: process.env.NEXTAUTH_SECRET || 'IMQYhPXxOTOgU90xDPS0zhpPWHiQvsmj6vR29cPLmUU='
   });
   const pathname = request.nextUrl.pathname;
 
@@ -17,7 +17,8 @@ export default async function middleware(request: NextRequest) {
   // If user is logged in and trying to access login or signup page
   if (token && (pathname === "/login" || pathname === "/signup")) {
     // Redirect based on role
-    switch (token.role) {
+    const role = token.role as string;
+    switch (role) {
       case "super-admin":
         return NextResponse.redirect(new URL("/dashboard/super-admin", request.url));
       case "admin":
@@ -26,6 +27,8 @@ export default async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/dashboard/hospital", request.url));
       case "clinic":
         return NextResponse.redirect(new URL("/dashboard/clinic", request.url));
+      default:
+        return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 

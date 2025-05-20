@@ -1,3 +1,5 @@
-import { GET, POST } from "@/auth";
+import { auth } from "@/auth";
 
-export { GET, POST }; 
+export const GET = auth;
+export const POST = auth;
+export const runtime = "edge";
