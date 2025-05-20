@@ -16,6 +16,7 @@ declare module "next-auth" {
 }
 
 export const authConfig: NextAuthConfig = {
+  debug: true,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -25,28 +26,54 @@ export const authConfig: NextAuthConfig = {
       },
       async authorize(credentials: any, req: any) {
         try {
+          console.log('Auth attempt started');
+          console.log('Credentials received:', { email: credentials?.email });
+
           if (!credentials?.email || !credentials.password) {
+            console.log('Missing credentials');
             return null;
           }
-          const { data: user } = await supabase
+
+          console.log('Checking database for user:', credentials.email);
+          
+          const { data: user, error: dbError } = await supabase
             .from('users')
             .select('*')
             .eq('email', credentials.email)
             .single();
 
-          if (user && user.password_hash && credentials.password) {
-            const valid = await bcrypt.compare(
-              credentials.password,
-              user.password_hash
-            );
-            if (valid) {
-              return {
-                id: String(user.id),
-                email: user.email,
-                role: user.role,
-              };
-            }
+          if (dbError) {
+            console.error('Database error:', dbError);
+            return null;
           }
+
+          if (!user) {
+            console.log('User not found');
+            return null;
+          }
+
+          console.log('User found:', { email: user.email, role: user.role });
+
+          if (!user.password_hash) {
+            console.log('No password hash found');
+            return null;
+          }
+
+          const valid = await bcrypt.compare(
+            credentials.password,
+            user.password_hash
+          );
+
+          console.log('Password validation:', valid);
+
+          if (valid) {
+            return {
+              id: String(user.id),
+              email: user.email,
+              role: user.role,
+            };
+          }
+          
           return null;
         } catch (error) {
           console.error('Auth error:', error);
@@ -84,4 +111,9 @@ export const authConfig: NextAuthConfig = {
 });
 
 const handler = NextAuth(authConfig);
-export const { auth, signIn, signOut } = handler;
+
+// Export the handlers separately for route.ts
+export const { handlers: { GET, POST } } = handler;
+
+// Export the middleware and auth utilities
+export const { auth: authMiddleware, signIn, signOut } = handler;
